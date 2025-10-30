@@ -1,0 +1,90 @@
+name: Build and Upload Artifacts
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: | 
+            6.0.x
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.sln', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Find VS and Init Developer Command Prompt
+        id: vsdev
+        shell: cmd
+        run: |
+          "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath > vsPath.txt
+          set /p VSPATH=<vsPath.txt
+          if "%VSPATH%"=="" (
+            echo Failed to locate Visual Studio with VC tools via vswhere
+            exit /b 1
+          )
+          echo VS Path: %VSPATH%
+          echo %VSPATH%> %GITHUB_WORKSPACE%\_vsinstallpath.txt
+
+      - name: Generate Dia2Lib (midl/tlbimp)
+        shell: cmd
+        run: |
+          set /p VSPATH=<"%GITHUB_WORKSPACE%\_vsinstallpath.txt"
+          call "%VSPATH%\Common7\Tools\VsDevCmd.bat"
+          cd /d %GITHUB_WORKSPACE%
+          call GenDia2Lib.bat
+
+      - name: Restore
+        run: dotnet restore ./TypeTreeDumper.sln
+
+      - name: Build Release
+        run: dotnet build ./TypeTreeDumper.sln -c Release --no-restore
+
+      - name: Upload artifacts (Bootstrapper)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypeTreeDumper.Bootstrapper-net6.0-windows
+          path: |
+            TypeTreeDumper.Bootstrapper/bin/Release/net6.0-windows/**
+          if-no-files-found: warn
+
+      - name: Upload artifacts (TypeTreeDumper)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypeTreeDumper-net6.0-windows
+          path: |
+            TypeTreeDumper/bin/Release/net6.0-windows/**
+          if-no-files-found: warn
+
+      - name: Upload artifacts (UnityInterop)
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnityInterop-net6.0-windows
+          path: |
+            UnityInterop/bin/Release/net6.0-windows/**
+          if-no-files-found: warn
+
+      - name: Upload artifacts (TypeTreeDumper.Loader net20)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypeTreeDumper.Loader-net20
+          path: |
+            TypeTreeDumper.Loader/bin/Release/net20/**
+          if-no-files-found: warn
+
+
