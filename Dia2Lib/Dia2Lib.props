@@ -11,8 +11,16 @@
     <DiaSdkDir>$(VSInstallRoot)\DIA SDK</DiaSdkDir>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="$(DiaSdkDir)\bin\msdia140.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="$(DiaSdkDir)\bin\amd64\msdia140.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="%(Filename)_amd64%(Extension)" />
-  </ItemGroup>
+<ItemGroup>
+  <Content Include="$(DiaSdkDir)\bin\msdia140.dll" 
+           CopyToOutputDirectory="PreserveNewest" 
+           CopyToPublishDirectory="PreserveNewest" 
+           Condition=\"Exists('$(DiaSdkDir)\\bin\\msdia140.dll')\" />
+  <Content Include="$(DiaSdkDir)\bin\amd64\msdia140.dll" 
+           CopyToOutputDirectory="PreserveNewest" 
+           CopyToPublishDirectory="PreserveNewest" 
+           Link="%(Filename)_amd64%(Extension)" 
+           Condition=\"Exists('$(DiaSdkDir)\\bin\\amd64\\msdia140.dll')\" />
+</ItemGroup>
 </Project>
+
