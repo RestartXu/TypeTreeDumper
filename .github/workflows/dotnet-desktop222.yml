@@ -1,0 +1,40 @@
+name: Build TypeTreeDumper
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for a cleaner build
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Generate Dia2Lib
+      shell: powershell
+      run: |
+        .\GenDia2Lib.bat
+
+    - name: Build solution
+      run: |
+        msbuild TypeTreeDumper.sln -p:Configuration=Release -p:Platform=x64 -maxcpucount
+      env:
+        # 如果需要额外的环境变量，可以在这里添加
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: TypeTreeDumper-Release
+        path: |
+          **/*.exe
+          **/*.dll  # 如果有相关 DLL，也一并上传
+        retention-days: 30
